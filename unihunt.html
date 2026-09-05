@@ -1,0 +1,1090 @@
+<?php
+session_start();
+include 'db.php';
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>UniHunt — Gujarat-first University Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { DEFAULT: '#16a34a' }, /* green */
+            action: { DEFAULT: '#ec4899' },  /* pink */
+            ink: '#0f172a',
+          },
+          fontFamily: { display: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui'] },
+          boxShadow: {
+            soft: '0 10px 25px -5px rgba(16,185,129,0.15), 0 8px 10px -6px rgba(16,185,129,0.12)',
+            card: '0 10px 30px rgba(2,6,23,0.08)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Smooth transitions and focus rings */
+    .btn { transition: all .2s ease; }
+    .focus-ring { outline: none; box-shadow: 0 0 0 3px rgba(236,72,153,.25); }
+    /* Simple slider dots */
+    .dot { transition: transform .2s ease, background-color .2s ease; }
+    /* Avoid text selection on draggable UI parts like compare bar */
+    .no-select { user-select: none; -webkit-user-select: none; }
+    /* Hide native number input spinners for cleaner UI */
+    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-rose-50 min-h-screen text-ink font-display">
+  <!-- App Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Header / Nav -->
+    <header class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <!-- Logo (SVG) -->
+        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-soft">
+          <svg viewBox="0 0 24 24" class="w-6 h-6 text-primary">
+            <path fill="currentColor" d="M12 3l8 4.5v3c0 5-3.5 9.5-8 10.5C7.5 20 4 15.5 4 10.5v-3L12 3zm0 2.2L6 8v2.5c0 3.9 2.6 7.6 6 8.5c3.4-.9 6-4.6 6-8.5V8l-6-2.8zM9.5 10a2.5 2.5 0 105 0a2.5 2.5 0 00-5 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">UniHunt</h1>
+          <p class="text-sm text-slate-600 -mt-0.5">Find your best-fit university in Gujarat</p>
+        </div>
+      </div>
+      <nav class="hidden md:flex items-center gap-2">
+        <button data-route="home" class="nav-btn px-4 py-2 rounded-lg font-semibold text-slate-700 hover:bg-white hover:shadow-soft">Home</button>
+        <button data-route="finder" class="nav-btn px-4 py-2 rounded-lg font-semibold text-slate-700 hover:bg-white hover:shadow-soft">Finder</button>
+        <button data-route="counselling" class="nav-btn px-4 py-2 rounded-lg font-semibold text-slate-700 hover:bg-white hover:shadow-soft">Counselling</button>
+        <button data-route="universities" class="nav-btn px-4 py-2 rounded-lg font-semibold text-slate-700 hover:bg-white hover:shadow-soft">Universities</button>
+        <button data-route="blog" class="nav-btn px-4 py-2 rounded-lg font-semibold text-slate-700 hover:bg-white hover:shadow-soft">Blog</button>
+      </nav>
+      <div class="flex items-center gap-2">
+
+        <button data-route="finder" class="px-4 py-2 rounded-lg bg-primary text-white font-semibold btn shadow-soft hover:brightness-110">Find Universities</button>
+      </div>
+    </header>
+
+    <!-- Mobile Tabs -->
+    <div class="md:hidden mt-5 grid grid-cols-5 gap-2">
+      <button data-route="home" class="nav-btn px-3 py-2 bg-white rounded-lg text-sm shadow card">Home</button>
+      <button data-route="finder" class="nav-btn px-3 py-2 bg-white rounded-lg text-sm shadow card">Finder</button>
+      <button data-route="counselling" class="nav-btn px-3 py-2 bg-white rounded-lg text-sm shadow card">Counselling</button>
+      <button data-route="universities" class="nav-btn px-3 py-2 bg-white rounded-lg text-sm shadow card">Unis</button>
+      <button data-route="blog" class="nav-btn px-3 py-2 bg-white rounded-lg text-sm shadow card">Blog</button>
+    </div>
+
+    <!-- Views -->
+    <main class="mt-8 space-y-10">
+      <!-- HOME -->
+      <section id="view-home" class="view">
+        <div class="grid lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-6">
+            <h2 class="text-3xl sm:text-4xl font-bold leading-tight">
+              Find Your Dream University — Based on Your Interests and Location
+            </h2>
+            <p class="text-slate-600">
+              Gujarat-first guidance with stream-matching, verified profiles, and smart filters. Start with a quick search or take the quiz to discover your best-fit path.
+            </p>
+            <!-- Quick Search -->
+            <form id="quickSearch" class="bg-white rounded-2xl p-4 shadow-card space-y-3">
+              <div class="grid sm:grid-cols-3 gap-3">
+                <select id="qs-stream" class="w-full rounded-xl border border-slate-200 px-3 py-2 focus-ring">
+                  <option value="">Stream</option>
+                  <option>Science (PCM)</option>
+                  <option>Science (PCB)</option>
+                  <option>Commerce</option>
+                  <option>Arts/Humanities</option>
+                  <option>Management</option>
+                  <option>Computer/IT</option>
+                </select>
+                <select id="qs-location" class="w-full rounded-xl border border-slate-200 px-3 py-2 focus-ring">
+                  <option value="">Location (Gujarat)</option>
+                  <option>Ahmedabad</option>
+                  <option>Surat</option>
+                  <option>Vadodara</option>
+                  <option>Rajkot</option>
+                  <option>Statewide</option>
+                </select>
+                <button class="w-full rounded-xl bg-primary text-white font-semibold px-4 py-2 btn hover:brightness-110">Search</button>
+              </div>
+            </form>
+
+            <div class="flex flex-wrap gap-3">
+              <button data-route="finder" class="px-4 py-2 rounded-xl bg-white shadow hover:shadow-soft">Browse Universities</button>
+              <button data-route="counselling" class="px-4 py-2 rounded-xl bg-action text-white shadow-soft btn">Take Conselling Session</button>
+            </div>
+
+            <!-- Highlights -->
+            <div class="grid sm:grid-cols-3 gap-4">
+              <div class="bg-white rounded-2xl p-4 shadow-card">
+                <p class="text-2xl font-bold text-primary">Gujarat-first</p>
+                <p class="text-sm text-slate-600">Regional rankings & trends</p>
+              </div>
+              <div class="bg-white rounded-2xl p-4 shadow-card">
+                <p class="text-2xl font-bold text-primary">Stream Match</p>
+                <p class="text-sm text-slate-600">Counsel-based guidance</p>
+              </div>
+              <div class="bg-white rounded-2xl p-4 shadow-card">
+                <p class="text-2xl font-bold text-primary">Compare 3</p>
+                <p class="text-sm text-slate-600">Side-by-side decisions</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Illustration -->
+          <div class="relative">
+            <div class="bg-gradient-to-br rounded-3xl p-6 shadow-card">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold">Top Picks in Gujarat</h3>
+                <span class="text-action font-semibold">Updated</span>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-4">
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Engineering</p>
+                  <p class="text-slate-600 text-sm">Ahmedabad, Surat</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Management</p>
+                  <p class="text-slate-600 text-sm">Vadodara, Rajkot</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Medical</p>
+                  <p class="text-slate-600 text-sm">Statewide</p>
+                </div>
+                
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Commerce</p>
+                  <p class="text-slate-600 text-sm">Ahmedabad</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold">Further updation of states with time </h3>
+              </div>
+               <div class="mt-4 grid grid-cols-2 gap-4">
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Pune</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Jaipur</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Delhi</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+                
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Indore</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Bengaluru</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+                <div class="rounded-xl p-4 border border-slate-100">
+                  <p class="font-semibold">Bubaneswar</p>
+                  <p class="text-slate-600 text-sm">Soon</p>
+                </div>
+              </div>
+            </div>
+            <div class="absolute -z-10 -top-6 -right-6 opacity-70 blur-2xl">
+              <div class="w-40 h-40 rounded-full bg-action/20"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINDER -->
+      <section id="view-finder" class="view hidden">
+        <div class="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-bold">University Finder</h2>
+            <p class="text-slate-600">Smart filters, map view, quick compare. Gujarat-first.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="toggleMap" class="px-4 py-2 rounded-lg bg-white shadow hover:shadow-soft">Toggle Map</button>
+            <button id="clearFilters" class="px-4 py-2 rounded-lg border border-slate-200 hover:bg-white">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <details class="bg-white rounded-2xl p-4 shadow-card mt-4" open>
+          <summary class="cursor-pointer font-semibold text-slate-700">Filters</summary>
+          <form id="filtersForm" class="grid md:grid-cols-6 gap-3 mt-3">
+            <select name="stream" class="rounded-xl border border-slate-200 px-3 py-2">
+              <option value="">Stream</option>
+              <option>Science (PCM)</option>
+              <option>Science (PCB)</option>
+              <option>Commerce</option>
+              <option>Arts/Humanities</option>
+              <option>Management</option>
+              <option>Computer/IT</option>
+            </select>
+            <select name="course" class="rounded-xl border border-slate-200 px-3 py-2">
+              <option value="">Course</option>
+              <option>B.Tech</option>
+              <option>B.Sc</option>
+              <option>BBA</option>
+              <option>BA</option>
+              <option>B.Com</option>
+              <option>MBBS</option>
+              <option>BCA</option>
+            </select>
+            <select name="exam" class="rounded-xl border border-slate-200 px-3 py-2">
+              <option value="">Entrance Exam</option>
+              <option>JEE</option>
+              <option>GUJCET</option>
+              <option>NEET</option>
+              <option>CUET</option>
+              <option>None</option>
+            </select>
+            <select name="type" class="rounded-xl border border-slate-200 px-3 py-2">
+              <option value="">Type</option>
+              <option>Government</option>
+              <option>Private</option>
+            </select>
+            <select name="city" class="rounded-xl border border-slate-200 px-3 py-2">
+              <option value="">City</option>
+              <option>Ahmedabad</option>
+              <option>Surat</option>
+              <option>Vadodara</option>
+              <option>Rajkot</option>
+              <option>Statewide</option>
+            </select>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-slate-600">Budget (₹k):</span>
+              <input name="budget" type="number" min="0" step="10" placeholder="e.g., 150" class="w-full rounded-xl border border-slate-200 px-3 py-2" />
+            </div>
+            <div class="md:col-span-6 flex flex-wrap gap-2">
+              <button class="px-4 py-2 rounded-lg bg-primary text-white btn">Apply</button>
+              <button id="onlyFeatured" type="button" class="px-4 py-2 rounded-lg bg-action text-white btn">Featured</button>
+            </div>
+          </form>
+        </details>
+
+        <!-- Map and List -->
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+          <!-- Map -->
+          <div id="mapWrap" class="lg:col-span-1 bg-white rounded-2xl p-4 shadow-card hidden lg:block">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Map — Gujarat</h3>
+              <span class="text-xs text-slate-500">Tap markers</span>
+            </div>
+            <div class="mt-3 aspect-[4/3] rounded-xl border border-slate-100 overflow-hidden">
+              <!-- Simple Gujarat-ish outline and city markers -->
+              <svg id="mapSvg" viewBox="0 0 320 240" class="w-full h-full">
+                <rect width="320" height="240" fill="#f0fdf4" />
+                <path d="M30,120 C60,60 140,40 200,60 C260,80 290,140 260,180 C220,230 120,220 70,190 C40,170 10,160 30,120 Z" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+                <!-- Cities -->
+                <g class="cursor-pointer" data-city="Ahmedabad">
+                  <circle cx="160" cy="110" r="7" fill="#ec4899"/><text x="170" y="114" font-size="10" fill="#0f172a">Ahmedabad</text>
+                </g>
+                <g class="cursor-pointer" data-city="Surat">
+                  <circle cx="140" cy="160" r="7" fill="#ec4899"/><text x="150" y="164" font-size="10" fill="#0f172a">Surat</text>
+                </g>
+                <g class="cursor-pointer" data-city="Vadodara">
+                  <circle cx="185" cy="135" r="7" fill="#ec4899"/><text x="195" y="139" font-size="10" fill="#0f172a">Vadodara</text>
+                </g>
+                <g class="cursor-pointer" data-city="Rajkot">
+                  <circle cx="105" cy="135" r="7" fill="#ec4899"/><text x="115" y="139" font-size="10" fill="#0f172a">Rajkot</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- List -->
+          <div class="lg:col-span-2 space-y-4" id="uniList">
+            <!-- Cards injected here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- COUNSELLING -->
+      <section id="view-counselling" class="view hidden">
+        <div class="grid lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2">
+            
+             
+
+          <!-- Book a Session (Demo) -->
+          <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl p-6 shadow-card">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold">Book a Counselling Session</h3>
+               
+              </div>
+              <p class="text-slate-600 mt-1">We’ll simulate a booking and show a success message.</p>
+              <form id="bookingForm" class="mt-4 space-y-3">
+                <input required placeholder="Your name" class="w-full rounded-xl border border-slate-200 px-3 py-2" />
+                <input required type="email" placeholder="Email" class="w-full rounded-xl border border-slate-200 px-3 py-2" />
+                <select class="w-full rounded-xl border border-slate-200 px-3 py-2">
+                  <option>Zoom</option>
+                  <option>Phone</option>
+                  <option>Chat</option>
+                </select>
+                <input type="date" class="w-full rounded-xl border border-slate-200 px-3 py-2" />
+                <button class="w-full px-4 py-2 rounded-lg bg-action text-white btn">Book Session</button>
+              </form>
+              
+            </div>
+            <!-- FAQ -->
+            <div class="bg-white rounded-2xl p-6 shadow-card mt-6">
+              <h4 class="font-bold">FAQ</h4>
+              <details class="mt-3">
+                <summary class="cursor-pointer font-semibold">Which stream is best for me?</summary>
+                <p class="text-slate-600 mt-2">Start with the quiz. It weighs your interests across Science, Commerce, Arts, Management, and IT, then suggests pathways and universities in Gujarat.</p>
+              </details>
+              <details class="mt-3">
+                <summary class="cursor-pointer font-semibold">Do I need to take entrance exams?</summary>
+                <p class="text-slate-600 mt-2">Engineering often requires JEE/GUJCET, medical needs NEET, and some courses accept CUET. Use the finder’s exam filter to refine.</p>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- UNIVERSITIES (Browse) -->
+      <section id="view-universities" class="view hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl sm:text-3xl font-bold">Browse by State / Stream / Course</h2>
+          <button data-route="finder" class="px-4 py-2 rounded-lg bg-primary text-white btn">Open Finder</button>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 mt-6">
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <h3 class="font-bold mb-3">States</h3>
+            <div class="flex flex-wrap gap-2">
+              <button class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900">Gujarat</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Pune (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Jaipur (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Delhi (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Indore (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Bengaluru (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Pune (soon)</button>
+              <button class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-800">Bhubaneswar (soon)</button>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <h3 class="font-bold mb-3">Streams</h3>
+            <div id="streamChips" class="flex flex-wrap gap-2">
+              <!-- chips injected -->
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <h3 class="font-bold mb-3">Entrance Guidance</h3>
+            <ul class="space-y-2 text-slate-700">
+              <li>• JEE & GUJCET for Engineering basics</li>
+              <li>• NEET overview for Medical aspirants</li>
+              <li>• CUET routes for multiple courses</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h3 class="font-bold">Featured Universities</h3>
+          <div id="featuredRow" class="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- featured cards -->
+          </div>
+        </div>
+      </section>
+
+      <!-- BLOG -->
+      <section id="view-blog" class="view hidden">
+        <h2 class="text-2xl sm:text-3xl font-bold">Blog & Guides</h2>
+        <div id="blogList" class="grid md:grid-cols-3 gap-6 mt-6">
+          <!-- blog cards -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Compare Bar -->
+  <div id="compareBar" class="fixed left-0 right-0 bottom-0 translate-y-full transition-transform duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-t-2xl shadow-card p-4 border border-slate-100 no-select">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-bold">Compare</span>
+            <span id="compareCount" class="text-slate-500 text-sm">(0/3)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="clearCompare" class="px-3 py-1.5 rounded-lg border border-slate-200">Clear</button>
+            <button id="openCompare" class="px-3 py-1.5 rounded-lg bg-action text-white btn">Compare Now</button>
+          </div>
+        </div>
+        <div id="compareThumbs" class="mt-3 flex gap-3 overflow-x-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- University Quick View Modal -->
+  <div id="uniModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-3xl rounded-2xl shadow-card overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <div>
+          <h3 id="modalName" class="text-xl font-bold"></h3>
+          <p id="modalCity" class="text-slate-600 text-sm"></p>
+        </div>
+        <button id="closeUniModal" class="p-2 rounded-lg hover:bg-slate-100" aria-label="Close">✕</button>
+      </div>
+      <div class="p-4">
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <span id="modalType" class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-900"></span>
+          <span id="modalExam" class="px-2 py-1 rounded-full bg-rose-100 text-rose-900"></span>
+          <span id="modalBudget" class="px-2 py-1 rounded-full bg-slate-100 text-slate-800"></span>
+        </div>
+        <div class="mt-4">
+          <div class="flex gap-2 border-b">
+            <button data-tab="overview" class="modal-tab px-3 py-2 border-b-2 border-transparent">Overview</button>
+            <button data-tab="courses" class="modal-tab px-3 py-2 border-b-2 border-transparent">Courses</button>
+            <button data-tab="fees" class="modal-tab px-3 py-2 border-b-2 border-transparent">Fees</button>
+            <button data-tab="placements" class="modal-tab px-3 py-2 border-b-2 border-transparent">Placements</button>
+            <button data-tab="reviews" class="modal-tab px-3 py-2 border-b-2 border-transparent">Reviews</button>
+          </div>
+          <div id="modalContent" class="mt-4 min-h-[160px] text-slate-700"></div>
+          <div class="mt-4 flex items-center gap-2">
+            <button class="px-4 py-2 rounded-lg bg-primary text-white btn">Enquire</button>
+            <button class="px-4 py-2 rounded-lg bg-action text-white btn">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Modal -->
+  <div id="compareModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-5xl rounded-2xl shadow-card overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="text-xl font-bold">Compare Universities</h3>
+        <button id="closeCompareModal" class="p-2 rounded-lg hover:bg-slate-100" aria-label="Close">✕</button>
+      </div>
+      <div id="compareTable" class="p-4 overflow-x-auto">
+        <!-- dynamic table -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 top-4 z-50 hidden">
+    <div class="bg-ink text-white px-4 py-2 rounded-xl shadow-card"></div>
+  </div>
+
+  <script>
+    // Sample Data (small set)
+    const UNIVERSITIES = [
+      {
+        id: 'U1', name: 'Gujarat University', city: 'Ahmedabad', type: 'Government', featured: true,
+        streams: ['Science (PCM)', 'Computer/IT', 'Commerce'], courses: ['B.Tech', 'BCA', 'BBA', 'MBBS', 'B.Sc', 'BA', 'B.Com'], exams: ['GUJCET'], budgetK:300,
+        rating: 4.0, placements: 'Avg ₹3.5LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹2.46L/yr', 'BCA': '₹26k/yr', 'B.Sc': '₹83k/yr', 'BBA': '₹66k/yr', 'MBBS': '₹50k/yr','B.Com': '₹50k/yr', 'BA': '₹10k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+      {
+        id: 'U2', name: 'Nirma University', city: 'Ahmedabad', type: 'Private', featured: true,
+        streams: ['Science (PCM)', 'Science (PCB)', 'Computer/IT', 'Commerce', 'Arts/Humanities'], courses: ['B.Tech', 'B.Com', 'BBA'], exams: ['NONE'], budgetK: 130,
+        rating: 4.4, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Within a short period of its existence, it has emerged as a nationally renowned higher education institution.',
+        fees: { 'B.Tech': '₹2.46L/yr', 'BBA': '₹3.65L/yr', 'B.Com': '₹2.28L/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+      {
+        id: 'U3', name: 'CEPT University', city: 'Ahmedabad', type: 'Private', featured: true,
+        streams: ['Science (PCM)', 'Computer/IT'], courses: ['B.Tech'], exams: ['NONE'], budgetK: 399,
+        rating: 3.7, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.2L/yr'},
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+       {
+        id: 'U4', name: 'Ahmedabad University', city: 'Ahmedabad', type: 'Private', featured: true,
+        streams: ['Science (PCM)', 'Commerce', 'Computer/IT','Arts/Humanities'], courses: ['B.Tech', 'BCA', 'BBA', 'B.Sc', 'BA', 'B.Com'], exams: ['JEE', 'GUJCET'], budgetK: 120,
+        rating: 4.5, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹3.75L/yr', 'BCA': '₹26k/yr', 'B.Sc': '₹83k/yr', 'BBA': '₹4.6L/yr','B.Com': '₹4.95L/yr', 'BA': '₹4.95L/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty,Great inrastructure.' }]
+      },
+       {
+        id: 'U5', name: 'GLS University ', city: 'Ahmedabad', type: 'Government', featured: true,
+        streams: ['Science (PCM)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['B.Tech', 'BCA', 'BA', 'BBA','B.Sc'], exams: ['JEE', 'GUJCET'], budgetK: 120,
+        rating: 3.5, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.2L/yr', 'BCA': '₹80k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+       {
+        id: 'U6', name: 'Indus University', city: 'Ahmedabad', type: 'Private', featured: true,
+        streams: ['Science (PCM)', 'Science (PCB)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['B.Tech', 'BCA', 'B.Com', 'BBA', 'BA', 'B.Sc'], exams: ['NONE'], budgetK: 200,
+        rating: 3.9, placements: 'Avg ₹6.8LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.10L/yr', 'BCA': '₹80k/yr', 'B.Sc': '₹1.61L/yr', 'B.Com': '₹60k/yr', 'BBA': '₹90k/yr', 'BA': '₹86k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+       {
+        id: 'U7', name: 'Sardar Vallabhbhai Institute of Technology(SVNIT)', city: 'Surat', type: 'Government', featured: true,
+        streams: ['Science (PCM)', 'Computer/IT'], courses: ['B.Tech'], exams: ['JEE'], budgetK: 120,
+        rating: 4, placements: 'Avg ₹10.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.2L/yr'},
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+       {
+        id: 'U8', name: 'Parul University', city: 'Vadodara', type: 'Private', featured: true,
+        streams: ['Science (PCM)','Science (PCB)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['BA','B.Tech', 'BCA','B.Sc', 'B.Com', 'BBA'], exams: ['JEE'], budgetK: 180,
+        rating: 4.1, placements: 'Avg ₹8LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading programs with strong industry ties. Known for practical and intellectual learning.',
+        fees: { 'B.Tech': '₹1.11L/yr', 'BCA': '₹1L/yr', 'B.Sc': '₹78k/yr', 'B.Com': '₹90k/yr', 'BBA': '₹1.34L/yr', 'BA': '₹74k/yr'},
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+       {
+        id: 'U9', name: 'Maharaja Sayajirao University', city: 'Vadodara', type: 'Government', featured: true,
+        streams: ['Science (PCM)','Science (PCB)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['BA','B.Tech', 'BCA','B.Sc', 'B.Com', 'BBA'], exams: ['JEE', 'GUJCET'], budgetK: 120,
+        rating: 4.5, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.11L/yr', 'BCA': '₹1L/yr', 'B.Sc': '₹78k/yr', 'B.Com': '₹90k/yr', 'BBA': '₹1.34L/yr', 'BA': '₹74k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+      {
+        id: 'U10', name: 'Saurashtra University', city: 'Rajkot', type: 'Government', featured: true,
+        streams: ['Science (PCM)','Science (PCB)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['BA','B.Tech', 'BCA','B.Sc', 'B.Com', 'BBA'], exams: ['JEE', 'GUJCET'], budgetK: 120,
+        rating: 4.5, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.11L/yr', 'BCA': '₹1L/yr', 'B.Sc': '₹78k/yr', 'B.Com': '₹90k/yr', 'BBA': '₹1.34L/yr', 'BA': '₹74k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+      {
+        id: 'U11', name: 'Pandit Dindayal Upadhyay Medical College', city: 'Rajkot', type: 'Government', featured: true,
+        streams: ['Science (PCM)','Science (PCB)', 'Computer/IT', 'Commerce','Arts/Humanities'], courses: ['BA','B.Tech', 'BCA','B.Sc', 'B.Com', 'BBA'], exams: ['JEE', 'GUJCET'], budgetK: 120,
+        rating: 4.5, placements: 'Avg ₹7.2LPA', facilities: ['Hostel', 'Labs', 'Sports'], images: ['🎓','🏛️'],
+        overview: 'Leading engineering programs with strong industry ties. Known for practical learning.',
+        fees: { 'B.Tech': '₹1.11L/yr', 'BCA': '₹1L/yr', 'B.Sc': '₹78k/yr', 'B.Com': '₹90k/yr', 'BBA': '₹1.34L/yr', 'BA': '₹74k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Great labs and placements.' }, { by: 'Student', text: 'Supportive faculty.' }]
+      },
+      {
+        id: 'U12', name: 'Surat Medical College', city: 'Surat', type: 'Government', featured: true,
+        streams: ['Science (PCB)'], courses: ['MBBS', 'B.Sc'], exams: ['NEET'], budgetK: 300,
+        rating: 4.2, placements: 'Residency support', facilities: ['Hospital', 'Hostel'], images: ['🧪','🏥'],
+        overview: 'Strong clinical exposure and experienced faculty for medical aspirants.',
+        fees: { 'MBBS': '₹3L/yr', 'B.Sc': '₹60k/yr' },
+        reviews: [{ by: 'Parent', text: 'Good patient inflow.' }]
+      },
+      {
+        id: 'U13', name: 'Vadodara School of Management', city: 'Vadodara', type: 'Private', featured: true,
+        streams: ['Management', 'Commerce'], courses: ['BBA', 'B.Com'], exams: ['CUET', 'None'], budgetK: 90,
+        rating: 4.0, placements: 'Avg ₹4.8LPA', facilities: ['Incubator', 'Library'], images: ['📈','📚'],
+        overview: 'Entrepreneurship-focused curriculum with live projects.',
+        fees: { 'BBA': '₹90k/yr', 'B.Com': '₹50k/yr' },
+        reviews: [{ by: 'Student', text: 'Great for internships.' }]
+      },
+      {
+        id: 'U14', name: 'Rajkot Arts & Humanities College', city: 'Rajkot', type: 'Private', featured: true,
+        streams: ['Arts/Humanities'], courses: ['BA'], exams: ['CUET', 'None'], budgetK: 40,
+        rating: 3.8, placements: 'Training & NGOs', facilities: ['Clubs', 'Auditorium'], images: ['🎭','🏫'],
+        overview: 'Vibrant cultural scene with strong humanities faculty.',
+        fees: { 'BA': '₹40k/yr' },
+        reviews: [{ by: 'Alumni', text: 'Engaging professors.' }]
+      },
+      {
+        id: 'U15', name: 'Ahmedabad Commerce College', city: 'Ahmedabad', type: 'Private', featured: true,
+        streams: ['Commerce', 'Management'], courses: ['B.Com', 'BBA'], exams: ['CUET', 'None'], budgetK: 55,
+        rating: 4.1, placements: 'Avg ₹3.9LPA', facilities: ['Library', 'Clubs'], images: ['💼','🏫'],
+        overview: 'Strong placements in accounting and marketing roles.',
+        fees: { 'B.Com': '₹55k/yr', 'BBA': '₹85k/yr' },
+        reviews: [{ by: 'Parent', text: 'Affordable and good faculty.' }]
+      }
+    ];
+
+    const BLOGS = [
+      { id:'B1', title: 'Top 5 Mistakes Students Make After 12th', tag: 'Guidance', excerpt: 'Avoid these common pitfalls while choosing your path…' },
+      { id:'B2', title: 'Science vs Commerce vs Arts – Which Should You Choose?', tag: 'Streams', excerpt: 'A simple framework to pick your stream…' },
+      { id:'B3', title: 'Affordable Colleges in Gujarat', tag: 'Budget', excerpt: 'Value-for-money picks across cities…' },
+      { id:'B4', title: 'Top 10 Engineering Colleges in Gujarat', tag: 'Engineering', excerpt: 'Our Gujarat-first list to start your search…' },
+      { id:'B5', title: 'Best BBA Colleges in Gujarat', tag: 'Management', excerpt: 'Shortlist these colleges for BBA aspirants…' },
+    ];
+
+    const STREAMS = ['Science (PCM)','Science (PCB)','Commerce','Arts/Humanities','Management','Computer/IT'];
+
+    // State
+    let route = 'home';
+    const selectedForCompare = new Map(); // id -> uni
+    let mapVisible = false;
+
+    // Utilities
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const showToast = (msg) => {
+      const t = $('#toast');
+      t.firstElementChild.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2200);
+    };
+
+    // Navigation
+    function setRoute(newRoute) {
+      route = newRoute;
+      $$('.view').forEach(v => v.classList.add('hidden'));
+      $('#view-' + route).classList.remove('hidden');
+      // Update active styles
+      $$('.nav-btn').forEach(b => {
+        const active = b.dataset.route === route;
+        b.classList.toggle('bg-primary');
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('text-slate-700', !active);
+        b.classList.toggle('shadow-soft', active);
+      });
+      if (route === 'finder') renderUniList();
+      if (route === 'universities') renderUniversitiesView();
+      if (route === 'blog') renderBlog();
+      if (route === 'home') startTestimonialSlider();
+    }
+
+    // Event: top nav + mobile nav
+    document.addEventListener('click', (e) => {
+      const nav = e.target.closest('[data-route]');
+      if (nav) {
+        e.preventDefault();
+        setRoute(nav.dataset.route);
+        window.location.hash = nav.dataset.route;
+      }
+    });
+
+    // Hash routing
+    window.addEventListener('hashchange', () => {
+      const r = window.location.hash.replace('#','') || 'home';
+      setRoute(r);
+    });
+
+    // Quick search
+    $('#quickSearch').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const stream = $('#qs-stream').value;
+      const loc = $('#qs-location').value;
+      // prefill filters
+      const form = $('#filtersForm');
+      form.stream.value = stream;
+      form.city.value = loc === 'Statewide' ? '' : loc;
+      setRoute('finder');
+      renderUniList();
+    });
+
+    // Finder logic
+    $('#filtersForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      renderUniList();
+    });
+    $('#clearFilters').addEventListener('click', () => {
+      $('#filtersForm').reset();
+      renderUniList();
+    });
+    $('#onlyFeatured').addEventListener('click', () => {
+      $('#filtersForm').reset();
+      renderUniList({ featuredOnly: true });
+    });
+    $('#toggleMap').addEventListener('click', () => {
+      mapVisible = !mapVisible;
+      $('#mapWrap').classList.toggle('hidden', !mapVisible);
+    });
+
+    // Map markers → filter by city
+    $('#mapSvg').addEventListener('click', (e) => {
+      const g = e.target.closest('g[data-city]');
+      if (!g) return;
+      const city = g.dataset.city;
+      const form = $('#filtersForm');
+      form.city.value = city;
+      renderUniList();
+      showToast(`Showing universities in ${city}`);
+    });
+
+    // Render university cards with filters
+    function filterUniversities(options = {}) {
+      const form = $('#filtersForm');
+      const q = {
+        stream: form.stream.value,
+        course: form.course.value,
+        exam: form.exam.value,
+        type: form.type.value,
+        city: form.city.value,
+        budget: form.budget.value ? parseInt(form.budget.value, 10) : null,
+        ...options
+      };
+      let list = UNIVERSITIES.slice();
+      if (q.featuredOnly) list = list.filter(u => u.featured);
+      if (q.stream) list = list.filter(u => u.streams.includes(q.stream));
+      if (q.course) list = list.filter(u => u.courses.includes(q.course));
+      if (q.exam) list = list.filter(u => u.exams.includes(q.exam));
+      if (q.type) list = list.filter(u => u.type === q.type);
+      if (q.city) list = list.filter(u => u.city === q.city);
+      if (q.budget != null) list = list.filter(u => u.budgetK <= q.budget);
+      // Simple ranking: featured first, then rating
+      list.sort((a,b) => (b.featured - a.featured) || (b.rating - a.rating));
+      return list;
+    }
+
+    function starRating(r) {
+      const full = Math.floor(r);
+      const half = r - full >= 0.5;
+      let stars = '';
+      for (let i=0;i<5;i++){
+        if (i<full) stars += '⭐';
+        else if (i===full && half) stars += '✴️';
+        else stars += '☆';
+      }
+      return stars;
+    }
+
+    function renderUniCard(u) {
+      const inCompare = selectedForCompare.has(u.id);
+      return `
+      <div class="bg-white rounded-2xl p-4 shadow-card border border-slate-100" data-id="${u.id}">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl">${u.images[0]}</div>
+            <div>
+              <h4 class="font-bold">${u.name}</h4>
+              <p class="text-sm text-slate-600">${u.city} • ${u.type}</p>
+            </div>
+          </div>
+          ${u.featured ? '<span class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-900">Featured</span>' : ''}
+        </div>
+        <div class="mt-3 text-sm text-slate-700">
+          <div>${starRating(u.rating)} <span class="text-slate-500">(${u.rating})</span></div>
+          <div class="mt-1">Courses: ${u.courses.join(', ')}</div>
+          <div>Exams: ${u.exams.join(', ')}</div>
+          <div>Budget: ₹${u.budgetK}k/yr</div>
+          <div>Placements: ${u.placements}</div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          ${u.streams.map(s => `<span class="text-xs px-2 py-1 rounded-full bg-slate-100">${s}</span>`).join('')}
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <button class="quick-view px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50">Quick View</button>
+          <button class="enquire px-3 py-1.5 rounded-lg bg-primary text-white">Enquire</button>
+          <button class="apply px-3 py-1.5 rounded-lg bg-action text-white">Apply</button>
+          <button class="toggle-compare ml-auto px-3 py-1.5 rounded-lg ${inCompare? 'bg-ink text-white':'bg-white border border-slate-200'}">
+            ${inCompare? 'Added ✓':'Add to Compare'}
+          </button>
+        </div>
+      </div>`;
+    }
+
+    function renderUniList(options) {
+      const list = filterUniversities(options);
+      const container = $('#uniList');
+      if (!list.length) {
+        container.innerHTML = `<div class="bg-white rounded-2xl p-6 shadow-card text-slate-600">No results. Try resetting filters.</div>`;
+        return;
+      }
+      // Selective rendering: build new HTML and inject once
+      container.innerHTML = list.map(renderUniCard).join('');
+    }
+
+    // Card actions
+    $('#uniList').addEventListener('click', (e) => {
+      const card = e.target.closest('[data-id]');
+      if (!card) return;
+      const id = card.dataset.id;
+      const uni = UNIVERSITIES.find(u => u.id === id);
+      if (e.target.closest('.quick-view')) openUniModal(uni);
+      if (e.target.closest('.toggle-compare')) toggleCompare(uni);
+      if (e.target.closest('.enquire')) showToast('Enquiry submitted (demo)!');
+      if (e.target.closest('.apply')) showToast('Application started (demo)!');
+    });
+
+    // Compare bar
+    function refreshCompareBar() {
+      const bar = $('#compareBar');
+      const count = selectedForCompare.size;
+      $('#compareCount').textContent = `(${count}/3)`;
+      const thumbs = $('#compareThumbs');
+      thumbs.innerHTML = '';
+      selectedForCompare.forEach(u => {
+        const pill = document.createElement('div');
+        pill.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100';
+        pill.innerHTML = `<span class="text-lg">${u.images[0]}</span><span class="text-sm">${u.name}</span><button aria-label="Remove" class="remove text-slate-500 hover:text-ink">✕</button>`;
+        pill.querySelector('.remove').addEventListener('click', () => {
+          selectedForCompare.delete(u.id);
+          refreshCompareBar();
+          renderUniList(); // refresh add button state
+        });
+        thumbs.appendChild(pill);
+      });
+      bar.style.transform = count ? 'translateY(0)' : 'translateY(100%)';
+    }
+
+    function toggleCompare(uni) {
+      if (selectedForCompare.has(uni.id)) {
+        selectedForCompare.delete(uni.id);
+      } else {
+        if (selectedForCompare.size >= 3) {
+          showToast('You can compare up to 3');
+          return;
+        }
+        selectedForCompare.set(uni.id, uni);
+      }
+      refreshCompareBar();
+      renderUniList();
+    }
+
+    $('#openCompare').addEventListener('click', () => {
+      if (!selectedForCompare.size) return;
+      openCompareModal();
+    });
+    $('#clearCompare').addEventListener('click', () => {
+      selectedForCompare.clear();
+      refreshCompareBar();
+      renderUniList();
+    });
+
+    function openCompareModal() {
+      const modal = $('#compareModal');
+      const unis = Array.from(selectedForCompare.values());
+      const rows = [
+        { label: 'Name', values: unis.map(u=>u.name) },
+        { label: 'City', values: unis.map(u=>u.city) },
+        { label: 'Type', values: unis.map(u=>u.type) },
+        { label: 'Streams', values: unis.map(u=>u.streams.join(', ')) },
+        { label: 'Courses', values: unis.map(u=>u.courses.join(', ')) },
+        { label: 'Exams', values: unis.map(u=>u.exams.join(', ')) },
+        { label: 'Budget', values: unis.map(u=>'₹'+u.budgetK+'k/yr') },
+        { label: 'Rating', values: unis.map(u=>u.rating) },
+        { label: 'Placements', values: unis.map(u=>u.placements) },
+        { label: 'Facilities', values: unis.map(u=>u.facilities.join(', ')) },
+      ];
+      const colCount = Math.max(3, unis.length + 1);
+      let html = `<table class="min-w-full text-sm">
+        <thead><tr><th class="text-left p-2"></th>${unis.map(u=>`<th class="text-left p-2">${u.images[0]} ${u.name}</th>`).join('')}</tr></thead>
+        <tbody>
+        ${rows.map(r=>`<tr class="border-t"><td class="p-2 font-semibold">${r.label}</td>${r.values.map(v=>`<td class="p-2">${v||'-'}</td>`).join('')}</tr>`).join('')}
+        </tbody></table>`;
+      $('#compareTable').innerHTML = html;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    $('#closeCompareModal').addEventListener('click', () => {
+      $('#compareModal').classList.add('hidden');
+      $('#compareModal').classList.remove('flex');
+    });
+
+    // University modal
+    function openUniModal(u) {
+      $('#modalName').textContent = u.name;
+      $('#modalCity').textContent = `${u.city} • ${u.type}`;
+      $('#modalType').textContent = u.type;
+      $('#modalExam').textContent = `Exams: ${u.exams.join(', ')}`;
+      $('#modalBudget').textContent = `Budget: ₹${u.budgetK}k/yr`;
+      renderModalTab('overview', u);
+      $('#uniModal').classList.remove('hidden');
+      $('#uniModal').classList.add('flex');
+      // Tab buttons
+      $$('#uniModal .modal-tab').forEach(btn => {
+        btn.classList.remove('border-primary','text-primary');
+        if (btn.dataset.tab === 'overview') btn.classList.add('border-primary','text-primary');
+        btn.onclick = () => {
+          $$('#uniModal .modal-tab').forEach(b=>b.classList.remove('border-primary','text-primary'));
+          btn.classList.add('border-primary','text-primary');
+          renderModalTab(btn.dataset.tab, u);
+        };
+      });
+    }
+    $('#closeUniModal').addEventListener('click', () => {
+      $('#uniModal').classList.add('hidden');
+      $('#uniModal').classList.remove('flex');
+    });
+
+    function renderModalTab(tab, u) {
+      const mc = $('#modalContent');
+      if (tab === 'overview') mc.innerHTML = `<p>${u.overview}</p><div class="mt-3 flex gap-2">${u.facilities.map(f=>`<span class="text-xs px-2 py-1 rounded-full bg-slate-100">${f}</span>`).join('')}</div>`;
+      if (tab === 'courses') mc.innerHTML = `<ul class="list-disc pl-5">${u.courses.map(c=>`<li>${c}</li>`).join('')}</ul>`;
+      if (tab === 'fees') mc.innerHTML = `<ul class="list-disc pl-5">${Object.entries(u.fees).map(([c,v])=>`<li><strong>${c}:</strong> ${v}</li>`).join('')}</ul>`;
+      if (tab === 'placements') mc.innerHTML = `<p>Placement highlights: ${u.placements}</p><div class="mt-2 text-2xl">${starRating(u.rating)}</div>`;
+      if (tab === 'reviews') mc.innerHTML = `<div class="space-y-2">${u.reviews.map(r=>`<div class="p-3 rounded-lg bg-slate-50"><p>"${r.text}"</p><p class="text-xs text-slate-500 mt-1">— ${r.by}</p></div>`).join('')}</div>`;
+    }
+
+    // Universities view
+    function renderUniversitiesView() {
+      // stream chips
+      const chips = STREAMS.map(s => `<button class="stream-chip px-3 py-1.5 rounded-full bg-slate-100" data-stream="${s}">${s}</button>`).join('');
+      $('#streamChips').innerHTML = chips;
+      $$('#streamChips .stream-chip').forEach(c => {
+        c.onclick = () => {
+          setRoute('finder');
+          $('#filtersForm').stream.value = c.dataset.stream;
+          renderUniList();
+        };
+      });
+      // featured
+      $('#featuredRow').innerHTML = UNIVERSITIES.filter(u=>u.featured).map(u => `
+        <div class="bg-white rounded-2xl p-4 shadow-card border border-slate-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">${u.images[1]||u.images[0]}</div>
+            <div>
+              <p class="font-semibold">${u.name}</p>
+              <p class="text-sm text-slate-600">${u.city}</p>
+            </div>
+          </div>
+          <div class="mt-2 text-sm">Courses: ${u.courses.join(', ')}</div>
+          <div class="mt-3 flex gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-white border border-slate-200" onclick="openUniModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">Quick View</button>
+            <button class="px-3 py-1.5 rounded-lg bg-action text-white" onclick="toggleCompareFromId('${u.id}')">Compare</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    function toggleCompareFromId(id){
+      const uni = UNIVERSITIES.find(u=>u.id===id);
+      if (uni) toggleCompare(uni);
+    }
+
+    // Blog view
+    function renderBlog() {
+      $('#blogList').innerHTML = BLOGS.map(b => `
+        <article class="bg-white rounded-2xl p-5 shadow-card border border-slate-100">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-900">${b.tag}</span>
+            <span class="text-2xl">📝</span>
+          </div>
+          <h3 class="mt-3 font-bold">${b.title}</h3>
+          <p class="text-slate-600 mt-1 text-sm">${b.excerpt}</p>
+          <div class="mt-3 flex items-center gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-primary text-white">Read Summary</button>
+            <button class="px-3 py-1.5 rounded-lg bg-white border border-slate-200">Save</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Quiz
+    const QUIZ = [
+      { q: 'I enjoy solving math/physics problems.', map: { 'Science (PCM)': 2, 'Computer/IT': 1 } },
+      { q: 'Biology and healthcare fascinate me.', map: { 'Science (PCB)': 2 } },
+      { q: 'I like business, marketing, or entrepreneurship.', map: { 'Management': 2, 'Commerce': 1 } },
+      { q: 'I prefer accounting, finance, or economics.', map: { 'Commerce': 2 } },
+      { q: 'I enjoy reading, writing, or social sciences.', map: { 'Arts/Humanities': 2 } },
+      { q: 'I love coding, logic, and building apps.', map: { 'Computer/IT': 2, 'Science (PCM)': 1 } },
+    ];
+    let quizIndex = 0;
+    const quizScores = Object.fromEntries(STREAMS.map(s=>[s,0]));
+
+    function renderQuiz() {
+      $('#quizProgress').textContent = `Q${quizIndex+1}/${QUIZ.length}`;
+      const { q } = QUIZ[quizIndex];
+      $('#quizArea').innerHTML = `
+        <p class="text-lg font-semibold">${q}</p>
+        <div class="grid sm:grid-cols-5 gap-2">
+          ${[ 'Strongly Disagree','Disagree','Neutral','Agree','Strongly Agree' ].map((t,i)=>`
+            <button data-v="${i-2}" class="answer px-3 py-2 rounded-lg ${i>=3?'bg-primary text-white':'bg-white border border-slate-200'}">${t}</button>
+          `).join('')}
+        </div>
+      `;
+      $$('#quizArea .answer').forEach(btn => {
+        btn.onclick = () => {
+          const weight = parseInt(btn.dataset.v,10);
+          const keys = Object.keys(QUIZ[quizIndex].map);
+          keys.forEach(k => { quizScores[k] += QUIZ[quizIndex].map[k] * Math.max(0, weight+2)/4; });
+          quizIndex++;
+          if (quizIndex < QUIZ.length) renderQuiz();
+          else showQuizResult();
+        };
+      });
+    }
+
+    function showQuizResult() {
+      // compute top 2
+      const sorted = Object.entries(quizScores).sort((a,b)=>b[1]-a[1]);
+      const top = sorted.slice(0,2).map(([k])=>k);
+      $('#quizArea').innerHTML = '<p class="text-slate-600">Thanks! Calculating your best-fit…</p>';
+      setTimeout(() => {
+        $('#quizResult').classList.remove('hidden');
+        $('#quizSummary').textContent = `You align most with: ${top.join(' and ')}. We’ve highlighted pathways and suggested universities.`;
+        // Pathways
+        const pathways = {
+          'Science (PCM)': ['B.Tech → Software/Mechanical/Electrical','B.Arch','B.Sc (Hons)'],
+          'Science (PCB)': ['MBBS','BDS','B.Sc Biotech'],
+          'Commerce': ['B.Com → CA/CS/CMA','BBA','Economics (Hons)'],
+          'Arts/Humanities': ['BA → UPSC/Media/NGOs','Psychology','Sociology'],
+          'Management': ['BBA → Marketing/HR/Finance','Integrated MBA'],
+          'Computer/IT': ['B.Tech CSE','BCA → MCA','Data/AI tracks'],
+        };
+        const list = top.flatMap(t => pathways[t].map(p => ({stream:t, path:p})));
+        $('#pathways').innerHTML = list.map(item => `
+          <div class="rounded-xl bg-white p-4 border border-slate-100 shadow-card">
+            <div class="text-xs px-2 py-1 rounded-full inline-block ${item.stream.includes('Science')?'bg-emerald-100 text-emerald-900':'bg-rose-100 text-rose-900'}">${item.stream}</div>
+            <p class="mt-2 font-semibold">${item.path}</p>
+          </div>
+        `).join('');
+        // Pre-fill finder with top stream
+        const form = $('#filtersForm');
+        form.stream.value = top[0] || '';
+      }, 500);
+    }
+
+    $('#resetQuiz').addEventListener('click', () => {
+      quizIndex = 0;
+      for (const k of Object.keys(quizScores)) quizScores[k]=0;
+      $('#quizResult').classList.add('hidden');
+      renderQuiz();
+    });
+
+    // Booking (Demo)
+    $('#bookingForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      showToast('Session booked! Check your email (demo)');
+      e.target.reset();
+    });
+
+    // Testimonials slider
+    const TESTIMONIALS = [
+      '“The quiz matched me with PCM and I found great B.Tech options in Ahmedabad.” — Riya',
+      '“Filters made it easy to shortlist budget colleges in Vadodara.” — Krunal',
+      '“Loved the quick compare. Helped me choose faster.” — Aisha',
+    ];
+    let tIndex = 0, tTimer;
+    function startTestimonialSlider() {
+      const text = $('#testimonialText');
+      const dots = $('#dots');
+      dots.innerHTML = TESTIMONIALS.map((_,i)=>`<div class="dot w-2.5 h-2.5 rounded-full ${i===0?'bg-action':'bg-slate-300'}"></div>`).join('');
+      const update = () => {
+        text.textContent = TESTIMONIALS[tIndex];
+        $$('#dots .dot').forEach((d,i) => {
+          d.className = 'dot w-2.5 h-2.5 rounded-full ' + (i===tIndex?'bg-action scale-110':'bg-slate-300');
+        });
+        tIndex = (tIndex+1)%TESTIMONIALS.length;
+      };
+      clearInterval(tTimer);
+      tIndex = 0;
+      update();
+      tTimer = setInterval(update, 3000);
+    }
+
+    // Initial renders
+    function init() {
+      // Route
+      const initial = (window.location.hash || '#home').replace('#','');
+      setRoute(initial);
+      // Finder list
+      renderUniList();
+      // Universities
+      renderUniversitiesView();
+      // Blog
+      renderBlog();
+      // Quiz
+      renderQuiz();
+      // Compare bar init
+      refreshCompareBar();
+    }
+    window.toggleCompareFromId = toggleCompareFromId;
+    window.openUniModal = (u) => openUniModal(u); // for featured section buttons
+    window.addEventListener('load', init);
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98224fe66411032a',t:'MTc1ODM4MTY4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
